@@ -9,7 +9,11 @@ export const metadata: Metadata = {
   description: 'Crea LUTs profesionales para Premiere Pro y DaVinci Resolve a partir de imágenes de referencia',
   keywords: 'LUT, color grading, Premiere Pro, DaVinci Resolve, color correction, filmmaking',
   authors: [{ name: 'LUT Maker AI' }],
-  viewport: 'width=device-width, initial-scale=1',
+}
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
 }
 
 export default function RootLayout({
