@@ -197,7 +197,7 @@ export default function Home() {
                     Colores Dominantes
                   </h4>
                   <div className="grid grid-cols-5 gap-3">
-                    {imageAnalysis.dominantColors.slice(0, 5).map((color, index) => (
+                    {imageAnalysis.dominantColors.slice(0, 5).map((color: any, index: number) => (
                       <div key={index} className="text-center">
                         <div
                           className="w-16 h-16 rounded-xl mx-auto mb-2 shadow-lg"
