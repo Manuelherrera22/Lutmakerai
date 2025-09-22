@@ -7,7 +7,10 @@ import { Zap, Download, FileText, Settings, Eye } from 'lucide-react'
 
 interface LutGeneratorProps {
   referenceImage: File | null
-  targetColor: string
+  targetImage: File | null
+  selectedLUT: any
+  referenceAnalysis: any
+  targetAnalysis: any
 }
 
 interface LutPreview {
@@ -15,7 +18,7 @@ interface LutPreview {
   after: string
 }
 
-export default function LutGenerator({ referenceImage, targetColor }: LutGeneratorProps) {
+export default function LutGenerator({ referenceImage, targetImage, selectedLUT, referenceAnalysis, targetAnalysis }: LutGeneratorProps) {
   const [isGenerating, setIsGenerating] = useState(false)
   const [lutPreview, setLutPreview] = useState<LutPreview | null>(null)
   const [lutData, setLutData] = useState<{ cube: string; threeDL: string } | null>(null)
@@ -31,23 +34,27 @@ export default function LutGenerator({ referenceImage, targetColor }: LutGenerat
   // })
 
   const generateLUT = async () => {
-    if (!referenceImage) return
+    if (!referenceImage || !targetImage) return
 
     setIsGenerating(true)
     
     try {
-      // Simulate LUT generation
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      // Simulate AI-powered LUT generation
+      await new Promise(resolve => setTimeout(resolve, 3000))
       
-      // Generate simple LUT content
-      const cubeContent = generateSimpleCUBELUT()
-      const threeDLContent = generateSimple3DLLUT()
+      // Generate LUT based on selected cinematic style
+      const lutName = selectedLUT ? `${selectedLUT.name}_LUT` : 'AI_Generated_LUT'
+      setLutName(lutName)
+      
+      const cubeContent = generateCinematicCUBELUT(selectedLUT)
+      const threeDLContent = generateCinematic3DLLUT(selectedLUT)
       
       setLutData({ cube: cubeContent, threeDL: threeDLContent })
       
       // Generate preview
-      const img = await loadImage(referenceImage)
-      setLutPreview({ before: img.src, after: img.src })
+      const refImg = await loadImage(referenceImage)
+      const targetImg = await loadImage(targetImage)
+      setLutPreview({ before: targetImg.src, after: refImg.src })
       
     } catch (error) {
       console.error('Error generating LUT:', error)
@@ -65,7 +72,7 @@ export default function LutGenerator({ referenceImage, targetColor }: LutGenerat
     })
   }
 
-  const generateSimpleCUBELUT = (): string => {
+  const generateCinematicCUBELUT = (selectedLUT: any): string => {
     let content = `TITLE "${lutName}"\n\n`
     content += `LUT_3D_SIZE 32\n\n`
     
@@ -76,12 +83,13 @@ export default function LutGenerator({ referenceImage, targetColor }: LutGenerat
           const inputG = g / 31
           const inputB = b / 31
           
-          // Simple color transformation
-          const outputR = Math.min(1, inputR * 1.2)
-          const outputG = Math.min(1, inputG * 1.1)
-          const outputB = Math.min(1, inputB * 1.3)
+          // Apply cinematic transformation based on selected LUT
+          const transformedColor = applyCinematicTransformation(
+            { r: inputR, g: inputG, b: inputB },
+            selectedLUT
+          )
           
-          content += `${outputR.toFixed(6)} ${outputG.toFixed(6)} ${outputB.toFixed(6)}\n`
+          content += `${transformedColor.r.toFixed(6)} ${transformedColor.g.toFixed(6)} ${transformedColor.b.toFixed(6)}\n`
         }
       }
     }
@@ -89,7 +97,65 @@ export default function LutGenerator({ referenceImage, targetColor }: LutGenerat
     return content
   }
 
-  const generateSimple3DLLUT = (): string => {
+  const applyCinematicTransformation = (inputColor: { r: number; g: number; b: number }, selectedLUT: any) => {
+    if (!selectedLUT) {
+      // Default transformation
+      return {
+        r: Math.min(1, inputColor.r * 1.1),
+        g: Math.min(1, inputColor.g * 1.05),
+        b: Math.min(1, inputColor.b * 1.15)
+      }
+    }
+
+    // Apply specific cinematic style
+    switch (selectedLUT.id) {
+      case 'teal-orange':
+        return {
+          r: Math.min(1, inputColor.r * 1.3), // Boost oranges
+          g: Math.min(1, inputColor.g * 0.9), // Reduce greens
+          b: Math.min(1, inputColor.b * 1.2)  // Boost teals
+        }
+      case 'film-noir':
+        const bw = (inputColor.r + inputColor.g + inputColor.b) / 3
+        return {
+          r: Math.min(1, bw * 1.2),
+          g: Math.min(1, bw * 1.1),
+          b: Math.min(1, bw * 0.9)
+        }
+      case 'golden-hour':
+        return {
+          r: Math.min(1, inputColor.r * 1.4), // Warm oranges
+          g: Math.min(1, inputColor.g * 1.2), // Warm yellows
+          b: Math.min(1, inputColor.b * 0.8)  // Reduce blues
+        }
+      case 'cyberpunk':
+        return {
+          r: Math.min(1, Math.abs(inputColor.r - 0.5) * 2), // High contrast
+          g: Math.min(1, inputColor.g * 1.5), // Boost greens
+          b: Math.min(1, inputColor.b * 1.5)  // Boost blues
+        }
+      case 'vintage-film':
+        return {
+          r: Math.min(1, inputColor.r * 1.1 + 0.1), // Slight sepia
+          g: Math.min(1, inputColor.g * 1.05 + 0.05),
+          b: Math.min(1, inputColor.b * 0.9 + 0.05)
+        }
+      case 'fire-glow':
+        return {
+          r: Math.min(1, inputColor.r * 1.6), // Intense reds
+          g: Math.min(1, inputColor.g * 1.3), // Warm yellows
+          b: Math.min(1, inputColor.b * 0.7)  // Reduce blues
+        }
+      default:
+        return {
+          r: Math.min(1, inputColor.r * 1.1),
+          g: Math.min(1, inputColor.g * 1.05),
+          b: Math.min(1, inputColor.b * 1.15)
+        }
+    }
+  }
+
+  const generateCinematic3DLLUT = (selectedLUT: any): string => {
     let content = `3DMESH\n`
     content += `Mesh 0 32\n`
     
@@ -106,13 +172,14 @@ export default function LutGenerator({ referenceImage, targetColor }: LutGenerat
           const inputG = g / 31
           const inputB = b / 31
           
-          const outputR = Math.min(1, inputR * 1.2)
-          const outputG = Math.min(1, inputG * 1.1)
-          const outputB = Math.min(1, inputB * 1.3)
+          const transformedColor = applyCinematicTransformation(
+            { r: inputR, g: inputG, b: inputB },
+            selectedLUT
+          )
           
-          const r12bit = Math.round(outputR * 4095)
-          const g12bit = Math.round(outputG * 4095)
-          const b12bit = Math.round(outputB * 4095)
+          const r12bit = Math.round(transformedColor.r * 4095)
+          const g12bit = Math.round(transformedColor.g * 4095)
+          const b12bit = Math.round(transformedColor.b * 4095)
           
           content += `${r12bit} ${g12bit} ${b12bit}\n`
         }
@@ -143,8 +210,34 @@ export default function LutGenerator({ referenceImage, targetColor }: LutGenerat
     <div className="card max-w-4xl mx-auto">
       <h3 className="text-2xl font-bold mb-6 text-center text-white flex items-center justify-center gap-3">
         <Zap className="w-7 h-7 text-primary-400" />
-        Generador de LUT
+        Generador de LUT Cinematográfico
       </h3>
+
+      {/* Selected LUT Info */}
+      {selectedLUT && (
+        <div className="mb-6 p-4 bg-gradient-to-r from-primary-500/10 to-purple-500/10 rounded-xl border border-primary-500/20">
+          <div className="flex items-center gap-3 mb-3">
+            {selectedLUT.icon}
+            <div>
+              <h4 className="text-lg font-bold text-white">{selectedLUT.name}</h4>
+              <p className="text-dark-300 text-sm">{selectedLUT.description}</p>
+            </div>
+            <div className="ml-auto flex items-center gap-2">
+              <span className="px-2 py-1 bg-primary-500/20 text-primary-400 text-xs rounded-full">
+                {selectedLUT.category}
+              </span>
+              <span className="px-2 py-1 bg-purple-500/20 text-purple-400 text-xs rounded-full">
+                {selectedLUT.mood}
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4 text-sm text-dark-400">
+              <span>Intensidad: <span className="text-white">{selectedLUT.intensity}%</span></span>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="space-y-6">
         {/* LUT Name Input */}
@@ -165,9 +258,9 @@ export default function LutGenerator({ referenceImage, targetColor }: LutGenerat
         <div className="flex justify-center">
           <button
             onClick={generateLUT}
-            disabled={!referenceImage || isGenerating}
+            disabled={!referenceImage || !targetImage || isGenerating}
             className={`btn-primary flex items-center gap-3 px-8 py-4 text-lg ${
-              !referenceImage || isGenerating 
+              !referenceImage || !targetImage || isGenerating 
                 ? 'opacity-50 cursor-not-allowed' 
                 : 'hover:shadow-2xl'
             }`}
