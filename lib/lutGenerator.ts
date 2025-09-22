@@ -118,7 +118,7 @@ export class LUTGenerator {
     let nearestColor = { r: inputColor.r, g: inputColor.g, b: inputColor.b }
     let minDistance = Infinity
     
-    for (const [key, mappedColor] of colorMapping.entries()) {
+    for (const [key, mappedColor] of Array.from(colorMapping.entries())) {
       const [r, g, b] = key.split(',').map(Number)
       const distance = Math.sqrt(
         Math.pow(inputR255 - r, 2) +
